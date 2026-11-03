@@ -24,10 +24,10 @@ class DatabaseSeeder extends Seeder
         $e5 = $avr->events()->create(['title' => 'Database Workshop', 'description' => 'Hands-on PostgreSQL.', 'starts_at' => '2026-11-25 09:00']);
         $e6 = $court->events()->create(['title' => 'Foundation Day Concert', 'description' => 'Evening concert.', 'starts_at' => '2026-12-01 18:00']);
 
-        // ---------- 8 participants ----------
+        // ---------- 10 participants ----------
         $names = [
-            'Juan Dela Cruz', 'Maria Santos', 'Jose Reyes', 'Ana Garcia',
-            'Mark Villanueva', 'Liza Mendoza', 'Paolo Ramos', 'Camille Torres',
+            'Ysthan Colarina', 'LeBron James', 'Ihsan Belches', 'Ethan Borlagdan', 'Dave Villanueva',
+            'Jim Delantar', 'Marchel Mercado', 'Jasmine Garcia', 'Kevin Durant', 'Nicole Batista',
         ];
         $p = [];
         foreach ($names as $i => $name) {
@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // ---------- 14 registrations, created THROUGH the many-to-many relationship ----------
+        // ---------- 17 registrations, created THROUGH the many-to-many relationship ----------
         // attach() inserts rows into the event_participant pivot table.
         $e1->participants()->attach([
             $p[1]->id => ['status' => 'registered'],
@@ -55,10 +55,12 @@ class DatabaseSeeder extends Seeder
         ]);
         $e4->participants()->attach([
             $p[7]->id => ['status' => 'registered'],
+            $p[9]->id => ['status' => 'registered'],
         ]);
         $e5->participants()->attach([
-            $p[1]->id => ['status' => 'registered'],
-            $p[8]->id => ['status' => 'registered'],
+            $p[1]->id  => ['status' => 'registered'],
+            $p[8]->id  => ['status' => 'registered'],
+            $p[10]->id => ['status' => 'registered'],
         ]);
         $e6->participants()->attach([
             $p[3]->id => ['status' => 'registered'],

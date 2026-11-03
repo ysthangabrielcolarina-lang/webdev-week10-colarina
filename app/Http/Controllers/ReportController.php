@@ -14,7 +14,7 @@ class ReportController extends Controller
         // The "chosen" rows for the queries below.
         $chosenVenue       = Venue::where('name', 'PUPC Gymnasium')->firstOrFail();
         $chosenEvent       = Event::where('title', 'Intramurals Opening')->firstOrFail();
-        $chosenParticipant = Participant::where('name', 'Juan Dela Cruz')->firstOrFail();
+        $chosenParticipant = Participant::where('name', 'Ysthan Colarina')->firstOrFail();
         $chosenNote        = Note::where('notable_type', 'venue')->orderBy('id')->firstOrFail();
 
         // Query 1: every venue with the number of events it hosts.
