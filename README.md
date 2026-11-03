@@ -1,59 +1,58 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Campus Events: Week 10 Relational Data Model & Queries
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel + PostgreSQL data layer for a small Campus Events system.
+Venues host events, participants register for events, and notes can be attached to either an event or a venue.
 
-## About Laravel
+**Author:** Ysthan Gabriel E. Colarina, BSIT 3
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## How to run
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+composer install
+cp .env.example .env        # then set the DB_* values for PostgreSQL
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan serve           # open http://127.0.0.1:8000/report
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tables
 
-## Learning Laravel
+| Table | Primary key | Foreign keys |
+|---|---|---|
+| `venues` | `id` | none |
+| `events` | `id` | `venue_id` → `venues.id` |
+| `participants` | `id` | none |
+| `event_participant` (pivot) | `id` | `event_id` → `events.id`, `participant_id` → `participants.id` (unique together) |
+| `notes` | `id` | none (polymorphic `notable_type` + `notable_id`) |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Relationships
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Link | Type | Model holding the foreign key | Relationship methods | ON DELETE | Reason |
+|---|---|---|---|---|---|
+| Venue ↔ Event | One-to-many | `Event` (`events.venue_id`) | `Venue::events()` hasMany, `Event::venue()` belongsTo | `RESTRICT` | A venue that still has events must not be deletable. |
+| Event ↔ Participant | Many-to-many | Pivot table `event_participant` (`event_id`, `participant_id`, plus `status`) | `Event::participants()` belongsToMany, `Participant::events()` belongsToMany | `CASCADE` (both keys) | When an event or a participant is deleted, its registrations must disappear too. |
+| Note → Event / Venue | Polymorphic one-to-many | `Note` (`notes.notable_type` + `notes.notable_id`) | `Event::notes()` morphMany, `Venue::notes()` morphMany, `Note::notable()` morphTo | None (no FK possible) | `notable_id` can point to two different tables, so PostgreSQL cannot enforce it; the application code keeps it valid. |
 
-## Laravel Sponsors
+Other rules enforced by the database:
+- `UNIQUE (event_id, participant_id)` on `event_participant`: the same participant cannot register for the same event twice.
+- `CHECK (status IN ('registered', 'waitlisted'))` on `event_participant.status`.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Report page
 
-### Premium Partners
+`GET /report` (`ReportController@index`, view `resources/views/report.blade.php`) shows seven labeled queries, all written with Eloquent relationships:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+1. Every venue with the number of events it hosts (`withCount('events')`)
+2. All events at one chosen venue (`$venue->events`)
+3. All participants of one chosen event with their status (`$event->participants`, pivot `status`)
+4. All events one chosen participant has joined (`$participant->events`)
+5. All events with at least one waitlisted participant (`whereHas('participants', ...)`)
+6. All notes of one chosen event and of one chosen venue (`$event->notes`, `$venue->notes`)
+7. For one chosen note, the name and kind of the thing it belongs to (`$note->notable`)
 
-## Contributing
+## Seeded data
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+`php artisan migrate:fresh --seed` creates 3 venues, 6 events, 10 participants, 17 registrations (14 registered, 3 waitlisted) and 6 notes (3 on events, 3 on venues).
 
-## Code of Conduct
+## Proof SQL
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+See `docs/proofs.sql` for the raw SQL used for Steps 7 to 9 (database-enforced errors, the accepted orphan note, and the cascade cleanup).
